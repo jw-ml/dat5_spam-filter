@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 
+''' make sure your working directory is set to the 'code' subdirectly '''
+
 import string
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
+
+# constants
+#data_path = '../preprocessed_data/preprocessed_email_inventory.csv'
+data_path = '../preprocessed_data/sample_data_inventory.csv'
 
 # separate each email into a string of words free of punctuation and other 'noise'
 def parse_email(f):
@@ -29,17 +35,15 @@ def parse_email(f):
 
 
 # get list of emails to parse
-with open('../preprocessed_data/prepro_email_inventory.csv', 'rU') as f:
+with open(data_path, 'rU') as f:
     list_of_emails = [row[:-1] for row in f] # have to remove the '\n' at the end of each line
 
-# remove any .DS_Store entries
-list_of_emails = [row for row in list_of_emails if row.find('.DS_Store') == -1]
 
 parsed_emails = []
 email_types = []
 for email in list_of_emails:
     with open(email, 'rU') as f:
-        mrkr = email.rfind('/')        
+        mrkr = email.rfind('.txt')        
         spam_or_ham = email[mrkr-3:mrkr]
         if spam_or_ham == 'ham':
             text = parse_email(f)
@@ -50,9 +54,6 @@ for email in list_of_emails:
             parsed_emails.append(text)
             email_types.append('spam')
             
-
-
-
 vectorizer = CountVectorizer(min_df=1, decode_error='ignore', stop_words='english')
 X = vectorizer.fit_transform(parsed_emails)
 col_names = vectorizer.get_feature_names()
