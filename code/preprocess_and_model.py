@@ -15,10 +15,11 @@ import re
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-# helper function to clean tokens using nltk
+# function to clean tokens using nltk
 def create_clean_tokens(s):    
     tokens = []
     for word in nltk.word_tokenize(s):
+        word = word
         tokens.append(word)
     clean_tokens = [token for token in tokens if re.search('^[$a-zA-Z]+', token)] # to fix: regular expression changes '$500' to '$'; want '$500' but not 5000
     to_return = ' '.join(clean_tokens)
