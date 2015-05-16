@@ -16,8 +16,8 @@ from numpy import random
 
 # declare constants
 CREATE_SAMPLE = 1   # set to 1 if you want to create a sample directory
-NUM_SAMPLES = 500
-SAMPLE_PATH = 'data_sample'
+NUM_SAMPLES = 500   # number of samples to grab for sample directory
+SAMPLE_PATH = 'data_sample'  # folder name
 
 
 # set new working directory to inventory
@@ -52,8 +52,6 @@ for (dirpath, dirname, files) in os.walk(cwd):
             list_of_files.append(thefile)
             file_count += 1
     
-# remove non-project related portion of the path (i.e., change to relative path instead of absolute)
-# this will also allow the files to be accessed from the 'code' subdirectory of the project directory
 
 # |~~~~~~~~~~~~~~~~~~~~~~| 
 # |  WRITE FILES TO CSV  |
@@ -61,11 +59,20 @@ for (dirpath, dirname, files) in os.walk(cwd):
 
 
 def absolute_to_relative_path(s):
+    '''
+    Takes a string argument 's' and removes parts of the file path that are not in the working directory. \n
+    For example: "Users/jw-ml/raw_data/email.txt" becomes "../raw_data/email.txt" \n
+    This transformation will also allow the files to be accessed from the 'code' subdirectory of the project directory
+    '''
     ii = s.find('/raw_data')
     s = '..' + s[ii:]
     return s
 
 def create_rand_sample(lof):
+    '''
+    Takes the list_of_files (lof) and draws a random sample.
+    Returns a list.
+    '''
     sample_files = []
     random.seed(123)
     rand_sel = random.choice(a=len(lof), size=NUM_SAMPLES, replace=False)
@@ -75,6 +82,9 @@ def create_rand_sample(lof):
     return sample_files
 
 def save_sample_files(sl):
+    '''
+    Saves the sample list (sl) to the SAMPLE_PATH constant.
+    '''
     for name in sl:
         filename = name[name.rfind('/')+1:]
         copyname = os.path.join(SAMPLE_PATH, filename)
