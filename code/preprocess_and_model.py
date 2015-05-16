@@ -26,10 +26,11 @@ def create_clean_tokens(s):
     return to_return
 
 # load the data
-df = pd.read_csv('../raw_data/email_text.csv', encoding='utf-8')
+df = pd.read_csv('../raw_data/email_text_150515.csv', encoding='utf-8')
 df = df.dropna() # to fix: don't put these in the sample to begin with...
 
 # clean the emails into a string of clean tokens
+df['spam'] = df.spam.map({'ham':0, 'spam':1})
 df['text'] = [create_clean_tokens(ii) for ii in df.text]
 
 
@@ -282,21 +283,19 @@ mn_nb.fit(train_dtm, y_train)
 
 # make predictions
 y_pred = mn_nb.predict(test_dtm)
-accuracy_score(y_test, y_pred)      # 0.98594
-confusion_matrix(y_test, y_pred)    # [[4496,  104],
-                                    #  [  76, 8133]])
+accuracy_score(y_test, y_pred)      # 0.98594  # 150515: 0.98782
+confusion_matrix(y_test, y_pred)    # [[4496,  104],    # 150515:   [4498, 92]
+                                    #  [  76, 8133]])               [64, 8158]
 
 # calc predict probability for roc_auc score
 y_prob = mn_nb.predict_proba(test_dtm)[:, 1]
-roc_auc_score(y_test, y_prob) # 0.996839
+roc_auc_score(y_test, y_prob) # 0.996839    # 150515: 
 
 # calc using full data set and cross_val_score
 mn_nb = MultinomialNB()
 X_fitted = vect.fit_transform(X)
 scores_nb = cross_val_score(mn_nb, X_fitted, y, cv=10, scoring='roc_auc')
 scores_nb.mean() # 0.98780
-
-
 
 
 
@@ -308,7 +307,7 @@ from sklearn.linear_model import LogisticRegression
 
 logreg = LogisticRegression()
 scores_lr = cross_val_score(logreg, X_fitted, y, cv=10, scoring='roc_auc')
-scores_lr.mean() # 0.994938
+scores_lr.mean() # 0.994938     #150515: 0.99517885
 
 # what kind of emails is it missing
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=9)
@@ -323,14 +322,38 @@ logreg.fit(X_train_dtm, y_train)
 y_pred = logreg.predict(X_test_dtm)
 
 # where is the model missing?
-confusion_matrix(y_test, y_pred) # [[4460,  140],
-                                 #  [  60, 8149]]
+confusion_matrix(y_test, y_pred) # [[4460,  140],  # 150515: [4463,  127]
+                                 #  [  60, 8149]]            [  43, 8179]
 # false positives
 for fp in X_test[y_test < y_pred]:
     print fp, '\n'
 
-# examples of false positives
+# examples of false positives (15/05/15 mail)
 '''
+Thanks for ordering from Amazon.com Your purchase information appears below 
+To see the latest information about your order or to cancel or modify a pending
+ order just click the Your Account link in the top right corner of any page on 
+ our Web site or visit http 
+
+Ok 
+
+I understand The money out the door is approximately $ however we have dollars 
+in excess of that amount reserved The $ will be paid out of that reserve and 
+will not be new dollars I will keep you posted Thank you Frank 
+
+Thank you for joining Spinner.com The Web largest source of free streaming 
+music Just wanted to confirm your registration with Spinner you now have 
+complete access to Spinner professionally programmed music channels and the 
+entire Spinner.com Website And just to remind you the player the Website and 
+most importantly the music are all totally FREE Your user name is junglo 
+We have omitted your password ...
+
+Dear Daren Farmer One of the things we like to do here at Expedia is help 
+you maximize your vacation dollar Since accommodations are a big part of every 
+vacation we went to more than quality hotels in more than cities and negotiated 
+hotel rates ...
+
+Here the link to the ERCOT page 
 
 
 '''    
@@ -340,6 +363,18 @@ for fn in X_test[y_test > y_pred]:
     print fn, '\n'
 
 '''
+Latest news and information Leasing Deal of the Year Mercedes-Benz E240 
+Elegance Auto Specification includes Automatic Metallic Paint Alloy Wheels 
+Electric Windows Remote Central Locking Electric Folding Mirrors Trip computer 
+Air Conditioning Headlamp ...
+
+Amnis Systems Inc. OTCBB AMNM CONTRACT ANNOUNCEMENTS AND HUGE NEWSLETTER 
+COVERAGE THIS WEEK FOR AMNM This Thursday AMNM will be profiled by some major 
+newsletters There will be huge volume and a strong increase in price for several days ...
+
+Great Weekend Sorry it took me so long to respond back to you I have been 
+really busy the couple of days just to remind you my name is candy I am years 
+of age I still have your email address from the profile I have seen your online
 
 
 '''
