@@ -11,13 +11,14 @@ import email
 
 
 # Set program constants
-#DATA_PATH = '../raw_data/raw_data_inventory.csv'
-DATA_PATH = '../raw_data/raw_data_sample.csv'
+DATA_PATH = '../raw_data/raw_data_inventory.csv'
+#DATA_PATH = '../raw_data/raw_data_sample.csv'
 
 
 # declare variables
 email_types = []
-email_headers = []
+subjects = []
+timestamps = []
 email_text = []
 problems = []
 skips = ['../raw_data/ham/kitchen-l/_americas_esvl/691.txt']
@@ -39,14 +40,27 @@ def separate_header_body(msg):
     '''
     parser = email.parser.Parser()
     temp = parser.parsestr(msg.as_string())
-    header = temp.items()
+    header = dict(temp.items()) # creates a list of tuples, then converts to dictionary
+    # look for subject    
+    try:    
+        subject = unicode(header['Subject'], 'utf-8', errors='ignore')
+    except:
+        subject = None
+    # look for timestamp
+    try:    
+        timestamp = unicode(header['Date'], 'utf-8', errors='ignore')
+    except:
+        try:
+            timestamp = unicode(header['Received'], 'utf-8', errors='ignore')
+        except:
+            timestamp = None
     # check if email is multipart. If Yes, only return the first part
     # ~~> This is probably a big area for improvement. Relates to mainly to Spam messages in the sample.
     if not temp.is_multipart():
         body = unicode(temp.get_payload(), 'utf-8', errors='ignore')
     else:
         body = unicode(temp.get_payload()[0].as_string(), 'utf-8', errors='ignore')
-    return header, body
+    return timestamp, subject, body
 
 
 
@@ -103,8 +117,8 @@ def get_cutoff(reply, forward):
 
 
 
-def parse_ham(header, body, remove_replies):
-    if header[3][1].lower().find('enron mentions') == -1: # get rid of problem emails
+def parse_ham(timestamp, subject, body, remove_replies):
+    if subject.lower().find('enron mentions') == -1: # get rid of problem emails
         try:    
             body = strip_html(body)
             if remove_replies:
@@ -112,21 +126,23 @@ def parse_ham(header, body, remove_replies):
                 forward = body.find('-------',0)
                 cutoff = get_cutoff(reply, forward)
                 body = body[:cutoff]
-            #email_headers.append(header)
+            timestamps.append(timestamp)
+            subjects.append(subject)
             email_text.append(body)
             email_types.append('ham')
             return True
         except:
             return False   
 
-def parse_spam(header, body, remove_replies):
+def parse_spam(timestamp, subject, body, remove_replies):
     try:    
         body = strip_html(body)
         if remove_replies:
             missed_header, head_len = find_problem_header(body)
             if missed_header > -1:
                 body = body[missed_header + head_len:]
-        #email_headers.append(header)
+        timestamps.append(timestamp)
+        subjects.append(subject)
         email_text.append(body)
         email_types.append('spam')
         return True
@@ -138,12 +154,12 @@ def parse_email(s, ham_spam, remove_replies=True):
     '''
     Processes the raw email into text that can be easily parsed.
     '''
-    header, body = separate_header_body(s)
+    timestamp, subject, body = separate_header_body(s)
     if ham_spam == 'ham':
-        is_success = parse_ham(header, body, remove_replies)
+        is_success = parse_ham(timestamp, subject, body, remove_replies)
         return is_success
     else:
-        is_success = parse_spam(header, body, remove_replies)
+        is_success = parse_spam(timestamp, subject, body, remove_replies)
         return is_success
 
         
@@ -160,18 +176,19 @@ for msg in list_of_emails:
         # open email as message from file using the email module
         with open(msg, 'rU') as f:
             content = email.message_from_file(f)
-        # is email ham or spam?
-        ham_or_spam = msg[12:15]
-        # call parse_email() to get email header and body
-        success = parse_email(content, ham_or_spam)
-        # store emails that cannot be parsed
-        if not success:            
-            problems.append(msg)
+        if not content.is_multipart():
+            # is email ham or spam?
+            ham_or_spam = msg[12:15]
+            # call parse_email() to get email header and body
+            success = parse_email(content, ham_or_spam)
+            # store emails that cannot be parsed
+            if not success:            
+                problems.append(msg)
 
 
 # create dataframe 
 import pandas as pd
-df = pd.DataFrame(zip(email_types, email_text), columns=['spam', 'text'])
+df = pd.DataFrame(zip(email_types, timestamps, subjects, email_text), columns=['spam', 'timestamp', 'subject', 'text'])
 
 # save to csv file
-df.to_csv('../raw_data/email_text_150515.csv', encoding='utf-8', index=False)
+df.to_csv('../raw_data/email_text_150516.csv', encoding='utf-8', index=False)
