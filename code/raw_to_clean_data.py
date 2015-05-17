@@ -11,8 +11,8 @@ import email
 
 
 # Set program constants
-DATA_PATH = '../raw_data/raw_data_inventory.csv'
-#DATA_PATH = '../raw_data/raw_data_sample.csv'
+#DATA_PATH = '../raw_data/raw_data_inventory.csv'
+DATA_PATH = '../raw_data/raw_data_sample.csv'
 
 
 # declare variables
@@ -33,27 +33,48 @@ problem_headers = [ 'Content-Type: text/html Content-Transfer-Encoding: \7bit', 
 # create functions
 
 def separate_header_body(msg):
-    # parse email into headers and body (i.e., metadata and data)
+    '''
+    Takes a full email message and separates it into the email's header and its body.
+    Returns the header and the body (i.e., metadata and text data)
+    '''
     parser = email.parser.Parser()
     temp = parser.parsestr(msg.as_string())
-    headers = temp.items()
+    header = temp.items()
+    # check if email is multipart. If Yes, only return the first part
+    # ~~> This is probably a big area for improvement. Relates to mainly to Spam messages in the sample.
     if not temp.is_multipart():
         body = unicode(temp.get_payload(), 'utf-8', errors='ignore')
     else:
         body = unicode(temp.get_payload()[0].as_string(), 'utf-8', errors='ignore')
-    return headers, body
+    return header, body
+
+
 
 def strip_html(html):
-    # strip any html and remove returns (\r), newlines (\n), tabs, etc...    
+    '''
+    Takes a string of text and strips any html tags that might be included.
+    It also strips out special elements such as returns (\r), newlines (\n), tabs (\t), etc.
+    Returns text string
+    '''
     b = BeautifulSoup(html)
     txt = b.get_text()
     txt = txt.replace('\r', ' ').replace('\n', ' ').replace('\t', ' ').replace('\\', '').replace('=20', '')
     return txt
 
+
+
 def find_problem_header(body):
+    '''
+    Some of the spam email have problem header elements that are not caught in \
+    the separate_header_body function. 
+    Takes the text from email body
+    Returns the location of the problem header and the length of the header
+    '''
+    # declare variables result, header length (head_len), and whether there is more than one problem header
     result = -1
     head_len = 0
     at_least_one = False
+    # see if any of the identified problem headers are in the email
     for ph in problem_headers:
         temp = body.find(ph)
         if temp > -1 and not at_least_one:
@@ -65,18 +86,22 @@ def find_problem_header(body):
             head_len = len(ph)
     return result, head_len
 
+
+
 def get_cutoff(reply, forward):
+    '''
+    Determines whether a reply or forwarded response comes first in the email string.
+    Takes the reply location and the forward location as inputs.
+    Returns 
+    '''
     if reply == -1 and forward == -1:
         return None
-    elif reply == -1 and forward > -1:
-        return forward
-    elif reply > -1 and forward == -1:
-        return reply
+    elif reply != -1 and forward != -1:
+        return min(reply, forward) # get first occurence
     else:
-        if reply < forward:
-            return forward
-        else:
-            return reply
+        return max(reply, forward) # get non -1 occurence
+
+
 
 def parse_ham(header, body, remove_replies):
     if header[3][1].lower().find('enron mentions') == -1: # get rid of problem emails
@@ -110,6 +135,9 @@ def parse_spam(header, body, remove_replies):
 
     
 def parse_email(s, ham_spam, remove_replies=True):
+    '''
+    Processes the raw email into text that can be easily parsed.
+    '''
     header, body = separate_header_body(s)
     if ham_spam == 'ham':
         is_success = parse_ham(header, body, remove_replies)
@@ -125,10 +153,11 @@ with open(DATA_PATH, 'rU') as f:
     list_of_emails = [row[:-1] for row in f] # have to remove the '\n' at the end of each line
 
 
+# run through list of emails and parse all messages into header and body
 for msg in list_of_emails:
     
-    if msg not in skips:  
-     # open email as message from file using the email module
+    if msg not in skips:  # temporary 'if-statement'; used to deal with emails that crashed python
+        # open email as message from file using the email module
         with open(msg, 'rU') as f:
             content = email.message_from_file(f)
         # is email ham or spam?
@@ -140,7 +169,7 @@ for msg in list_of_emails:
             problems.append(msg)
 
 
-# create dataframe .... 
+# create dataframe 
 import pandas as pd
 df = pd.DataFrame(zip(email_types, email_text), columns=['spam', 'text'])
 
