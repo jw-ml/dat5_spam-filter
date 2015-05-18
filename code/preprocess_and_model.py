@@ -18,9 +18,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.cross_validation import train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 
-#data_file = '../raw_data/email_text.csv'
+#data_file = '../raw_data/email_text_150512.csv'
 #data_file = '../raw_data/email_text_150515.csv'
-data_file = '../raw_data/email_text_150516.csv'
+#data_file = '../raw_data/email_text_150516.csv'
+data_file = '../raw_data/email_text_150516_withRF.csv'
+
 
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~
 #  |  PRE-PROCESS DATA   |
@@ -28,14 +30,17 @@ data_file = '../raw_data/email_text_150516.csv'
 
 
 # function to clean tokens using nltk
-def create_clean_tokens(s):    
-    tokens = []
-    for word in nltk.word_tokenize(s):
-        word = word
-        tokens.append(word)
-    clean_tokens = [token for token in tokens if re.search('^[$a-zA-Z]+', token)] # to fix: regular expression changes '$500' to '$'; want '$500' but not 5000
-    to_return = ' '.join(clean_tokens)
-    return to_return
+def create_clean_tokens(s):   
+    try: # to deal with null 'subject' observations
+        tokens = []
+        for word in nltk.word_tokenize(s):
+            word = word
+            tokens.append(word)
+        clean_tokens = [token for token in tokens if re.search('^[$a-zA-Z]+', token)] # to fix: regular expression changes '$500' to '$'; want '$500' but not 5000
+        to_return = ' '.join(clean_tokens)
+        return to_return
+    except: # if above fails, return null value
+        return s
 
 # load the data
 df = pd.read_csv(data_file, encoding='utf-8')
@@ -43,6 +48,7 @@ df = pd.read_csv(data_file, encoding='utf-8')
 # look at null values
 df.isnull().sum()
 df = df.dropna().reset_index(drop=True) # need to find a better way of dealing with this; most likely in the steps cleaning the data...
+#df = df[df.text.isnull()==False].reset_index(drop=True)
 
 # clean the emails into a string of clean tokens
 df['spam'] = df.spam.map({'ham':0, 'spam':1})
@@ -316,8 +322,8 @@ print 'MODEL: Logistic Regression on email text: \n\t accuracy score: \t %.6f \n
 print confusion_matrix(y_test, y_pred)
 #[[4397  125]
 # [  45 5259]]
-print_false_negatives(X_test, y_test, y_pred)
-print_false_positives(X_test, y_test, y_pred)
+print_false_negatives(X_test, y_test, y_pred) # appear to be very long emails ...
+print_false_positives(X_test, y_test, y_pred) # appear to be very short emails (or spam-like)
 
 # TAKEAWAYS
 # ~~> Model catches too many ham emails (i.e., producs too many false positives)

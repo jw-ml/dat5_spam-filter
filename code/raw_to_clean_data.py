@@ -156,10 +156,10 @@ def parse_email(s, ham_spam, remove_replies=True):
     '''
     timestamp, subject, body = separate_header_body(s)
     if ham_spam == 'ham':
-        is_success = parse_ham(timestamp, subject, body, remove_replies)
+        is_success = parse_ham(timestamp, subject, body, remove_replies=False)
         return is_success
     else:
-        is_success = parse_spam(timestamp, subject, body, remove_replies)
+        is_success = parse_spam(timestamp, subject, body, remove_replies=False)
         return is_success
 
         
@@ -191,4 +191,4 @@ import pandas as pd
 df = pd.DataFrame(zip(email_types, timestamps, subjects, email_text), columns=['spam', 'timestamp', 'subject', 'text'])
 
 # save to csv file
-df.to_csv('../raw_data/email_text_150516.csv', encoding='utf-8', index=False)
+df.to_csv('../raw_data/email_text_150516_withRF.csv', encoding='utf-8', index=False)
