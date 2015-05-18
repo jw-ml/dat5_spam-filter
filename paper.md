@@ -43,18 +43,28 @@ Lastly, I use the natural language toolkit (nlkt) and scikit-learn's CountVector
 
 ###Data exploration and visualization
 
-#INSERT WORDCOUNTS
-#INSERT WORD CLOUD
+#_INSERT WORDCOUNTS_
+#_INSERT WORD CLOUD_
 
 ###Features
 
+Currently, my model is built around only a few features:
+1. the document term matrix associated with the email text
+2. the document term matrix associtaed with the email subject
 
+Over the course of time, I intend to create the following features:
+1. the length of text
+2. the length of subject
+3. ratio of upper to lower case letters
+4. number of special (i.e., non-alphanumeric) characters
+5. number of links included in email (not sure how to do this one yet...)
+6. features related to the timestamp (not sure how to do this one yet...)
+7. incorporating n-grams of size two into the document term matrices above
 
 
 ###Model selection and results
 
-
-
+The models I have selected to apply to the document term matrices above are Multinomial Naive Bayes and Logistic Regression. Currently, they both perform well....
 
 ###Main challenges
 
