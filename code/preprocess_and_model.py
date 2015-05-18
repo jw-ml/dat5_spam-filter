@@ -1,14 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 12 21:49:10 2015
-
 @author: jward
 """
+
+
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  |       IMPORT MODULES       |
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 import pandas as pd
 import numpy as np
 import nltk
 import re
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.cross_validation import train_test_split
+from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
+
+#data_file = '../raw_data/email_text.csv'
+#data_file = '../raw_data/email_text_150515.csv'
+data_file = '../raw_data/email_text_150516.csv'
 
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~
 #  |  PRE-PROCESS DATA   |
@@ -26,12 +38,16 @@ def create_clean_tokens(s):
     return to_return
 
 # load the data
-df = pd.read_csv('../raw_data/email_text_150515.csv', encoding='utf-8')
-df = df.dropna() # to fix: don't put these in the sample to begin with...
+df = pd.read_csv(data_file, encoding='utf-8')
+
+# look at null values
+df.isnull().sum()
+df = df.dropna().reset_index(drop=True) # need to find a better way of dealing with this; most likely in the steps cleaning the data...
 
 # clean the emails into a string of clean tokens
 df['spam'] = df.spam.map({'ham':0, 'spam':1})
 df['text'] = [create_clean_tokens(ii) for ii in df.text]
+df['subject'] = [create_clean_tokens(ii) for ii in df.subject]
 
 
 
@@ -39,7 +55,7 @@ df['text'] = [create_clean_tokens(ii) for ii in df.text]
 #  |      DATA EXPLORATION      |
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-from sklearn.feature_extraction.text import CountVectorizer
+
 vect = CountVectorizer(stop_words='english')
 vect.fit(df.text)
 all_features = vect.get_feature_names()
@@ -47,10 +63,12 @@ all_features = vect.get_feature_names()
 ham_dtm = vect.transform(df[df.spam==0].text)
 ham_arr = ham_dtm.toarray()
 del ham_dtm # to free up memory
+ham_arr.shape
 
 spam_dtm = vect.transform(df[df.spam==1].text)
 spam_arr = spam_dtm.toarray()
 del spam_dtm, df # to free up memory
+spam_arr.shape
 
 ham_counts = np.sum(ham_arr, axis=0)
 del ham_arr # free up memory
@@ -67,64 +85,134 @@ all_token_counts.sort('spam').head(25)
 
 # drop token counts and reload dataframe
 del all_features, all_token_counts, ham_counts, spam_counts
-df = pd.read_csv('../raw_data/email_text.csv', encoding='utf-8').dropna()
+df = pd.read_csv(data_file, encoding='utf-8').dropna()
 df['text'] = [create_clean_tokens(ii) for ii in df.text]
 
 
+####################################################
+####################################################
+# |                                              | #
+# |              PROGRAM FUNCTIONS               | #
+# |                                              | #
+####################################################
+####################################################
 
 
-######################################
-######################################
-# |                                | #
-# |   MODELS WITH STOP WORDS       | #
-# |                                | #
-######################################
-######################################
+def get_model_data(data, feature_col, random_state_num):
+    '''creates features and response, then returns training and test data'''
+    X = data[feature_col]
+    y = df.spam
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state_num)
+    return X_train, X_test, y_train, y_test
+    
+    
+def transform_data_to_dtm(train, test, remove_stop_words=True):
+    '''converts text to data-term-matrices'''
+    if remove_stop_words:    
+        vect = CountVectorizer(stop_words='english')
+    else:
+        vect = CountVectorizer(stop_words=None)
+    train_dtm = vect.fit_transform(X_train)
+    test_dtm = vect.transform(X_test)
+    return train_dtm, test_dtm
 
+
+def run_multinomial_nb(X_tr, X_tst, y_tr, y_tst, pred_prob=False):
+    '''Returns accuracy_score and predictions'''
+    mn_nb = MultinomialNB()
+    mn_nb.fit(X_tr, y_train)
+    if not pred_prob:
+        # make predictions
+        y_pred = mn_nb.predict(X_tst)
+        acc = accuracy_score(y_tst, y_pred)
+        return acc, y_pred
+    else:
+        # calc predict probability for roc_auc score
+        y_prob = mn_nb.predict_proba(X_tst)[:, 1]
+        roc = roc_auc_score(y_tst, y_prob)
+        return roc, y_prob
+        
+def run_log_reg(X_tr, X_tst, y_tr, y_tst, pred_prob=False):
+    logreg = LogisticRegression()
+    logreg.fit(X_tr, y_tr)
+    if not pred_prob:
+        y_pred = logreg.predict(X_tst)
+        acc = accuracy_score(y_tst, y_pred)
+        return acc, y_pred
+    else:
+        y_prob = logreg.predict_proba(X_tst)[:,1]
+        roc = roc_auc_score(y_tst, y_prob)
+        return roc, y_prob
+
+def print_false_positives(X_test, y_test, y_guess):
+    for subj in X_test[y_test < y_pred]:
+        print subj, '\n'
+
+def print_false_negatives(X_test, y_test, y_guess):
+    for subj in X_test[y_test > y_pred]:
+        print subj, '\n'
+
+
+    
+####################################################
+####################################################
+# |                                              | #
+# |         MODELS (STOP WORDS INCLUDED)         | #
+# |                                              | #
+####################################################
+####################################################
+    
 
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~
 #  |      NAIVE BAYES      |
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.cross_validation import train_test_split, cross_val_score
-from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
-
-# create features and columns
-X = df.text
-y = df.spam
-
-# create train_test_split datasets
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=9)
-
-# fit and transform X_train, and transform X_test
-vect = CountVectorizer()
-train_dtm = vect.fit_transform(X_train)
-test_dtm = vect.transform(X_test)
-
-# run Multinomial Naive Bayes
-mn_nb = MultinomialNB()
-mn_nb.fit(train_dtm, y_train)
-
-# make predictions
-y_pred = mn_nb.predict(test_dtm)
-accuracy_score(y_test, y_pred)      # first run: 0.986259
-confusion_matrix(y_test, y_pred)    # array([[4586,   96],
-                                    #        [  80, 8047]])
-
-# calc predict probability for roc_auc score
-y_prob = mn_nb.predict_proba(test_dtm)[:, 1]
-roc_auc_score(y_test, y_prob) # first run: 0.99747
-
-# calc using full data set and cross_val_score
-mn_nb = MultinomialNB()
-vect = CountVectorizer()
-X_fitted = vect.fit_transform(X)
-scores_nb = cross_val_score(mn_nb, X_fitted, y, cv=10, scoring='roc_auc')
-scores_nb.mean() # 0.98426
+# Using only the text of the email
+X_train, X_test, y_train, y_test = get_model_data(df, 'text', 123)
+train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=False)
+acc, y_pred = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test)
+roc, y_prob = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
+print 'MODEL: Naive Bayes on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
 
 
+# print confusion matrix
+print confusion_matrix(y_test, y_pred)
+
+# look at false negatives
+print_false_negatives(X_test, y_test, y_pred)
+    
+# look at false positives:
+print_false_positives(X_test, y_test, y_pred)
+
+
+### with 150512 data without removing stopwords
+# ~~> accuracy score: 0.986259
+# ~~> roc_auc_score: 0.99747
+
+### with 150516 data without removing stopwords
+# ~~> accuracy score: 0.985752
+# ~~> roc_auc_score: 0.997402
+
+# using only the subject line of the email
+X_train, X_test, y_train, y_test = get_model_data(df, 'subject', 123)
+train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=False)
+acc, y_pred = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test)
+roc, y_prob = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
+print 'MODEL: Naive Bayes on email Subject: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
+#MODEL: Naive Bayes on email Subject: 
+#	 accuracy score: 	 0.937106 
+#	 roc_auc_score: 	      0.982702
+
+# print confusion matrix
+print confusion_matrix(y_test, y_pred)
+print_false_negatives(X_test, y_test, y_pred)
+print_false_positives(X_test, y_test, y_pred)
+
+# ~~> take away: not enough information to use Subject alone
+# ~~> need to engineer more features for this model:
+# ~~>   . ratio of upper to lower case characters
+# ~~>   . number of special characters
+# ~~>   . length of subject text 
 
 
 
@@ -132,258 +220,209 @@ scores_nb.mean() # 0.98426
 #  |      LOGISTIC REGRESSION      |
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-from sklearn.linear_model import LogisticRegression
+X_train, X_test, y_train, y_test = get_model_data(df, 'text', 1)
+train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=False)
+acc, y_pred = run_log_reg(train_dtm, test_dtm, y_train, y_test)
+roc, y_prob = run_log_reg(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
+print 'MODEL: Logistic Regression on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
+#MODEL: Logistic Regression on email text: 
+#	 accuracy score: 	 0.982699 
+#	 roc_auc_score: 	      0.997297
 
-logreg = LogisticRegression()
-scores_lr = cross_val_score(logreg, X_fitted, y, cv=10, scoring='roc_auc')
-scores_lr.mean() # 0.99483
+print confusion_matrix(y_test, y_pred) 
+#[[4402  120]
+# [  50 5254]]
+print_false_negatives(X_test, y_test, y_pred)
+print_false_positives(X_test, y_test, y_pred)
 
-# what kind of emails is it missing
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=9)
+X_train, X_test, y_train, y_test = get_model_data(df, 'subject', 1)
+train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=False)
+acc, y_pred = run_log_reg(train_dtm, test_dtm, y_train, y_test)
+roc, y_prob = run_log_reg(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
+print 'MODEL: Logistic Regression on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
+#MODEL: Logistic Regression on email subject: 
+#	 accuracy score: 	0.942296 
+#	 roc_auc_score: 	     0.984512
 
-# vectorize text
-vect = CountVectorizer()
-X_train_dtm = vect.fit_transform(X_train)
-X_test_dtm = vect.transform(X_test)
-
-# fit model
-logreg = LogisticRegression()
-logreg.fit(X_train_dtm, y_train)
-y_pred = logreg.predict(X_test_dtm)
-
-# where is the model missing?
-confusion_matrix(y_test, y_pred) # [[4466,  134],
-                                 #  [  60, 8149]])
-# false positives
-for fp in X_test[y_test < y_pred]:
-    print fp, '\n'
-
-# examples of false positives
-'''
-The following is an aerial photo of the WTC area It kinda brings on vertigo 
-but is a phenomenal shot http
-
-Bloody Hell 
-
-Click here for more information about ETS The Next Generation http 
-
-Save when you use our Customer Appreciation Spring Savings Certificate at Foot 
-Locker Lady Foot Locker Kids Foot Locker and at our online stores Welcome to 
-our Customer Appreciation Spring Savings Certificate Use the special 
-certificate below and receive OFF your purchase ... 
-
-Louise Your new pager number is Here are the instructions on sending messages 
-Email for your SurePage pagenetmessage.net When you do n't have email but have 
-internet access www.pagenet.com click on send a message Terminal click on arrow 
-and a menu will drop down SurePage Enter your pin do not type Type your message 
-Click on Send the Message 
-
-Lokay bigfoot.com thought you would be interested in this article at Salon.com 
-http It time to sit back and relax in luxury The all-new ES possesses the 
-luxury amenities to pamper you and the cutting-edge technology to thrill you 
-The all-new ES welcome to a new world of luxury Click To Enter A New World Of 
-Luxury Your friend message I thought of you This Modern World By Tom Tomorrow 
-http Sun Jan 
-
-Copy do not forward this entire e-mail and paste it onto a new e-mail that you
-will send Change all of the answers so that they apply to you Then send this 
-to a whole bunch of people you know INCLUDING the person who sent it to you 
-The theory is that you will learn a lot of little known facts about your friends 
-Remember to send yours back to the person who sent it to you ...
-
-One morning Dick Cheney and George W. Bush were having brunch at a restaurant 
-The attractive waitress asks Cheney what he would like and he replies I have 
-a bowl of oatmeal and some fruit And what can I get for you sir she asks 
-George W. He replies How about a quickie  Why Mr. President the waitress says 
-How rude you starting to act like Mr. Clinton and you have n't even been in 
-office for a month yet As the waitress storms away Cheney leans over to Bush 
-and whispers It pronounced quiche 
-
-'''    
-
-# false negatives
-for fn in X_test[y_test > y_pred]:
-    print fn, '\n'
-
-'''
-Hey What up Here the link that you requested I hope it what you needed Got ta 
-run for now I be back on monday let me know if it helps Catch you later 
-Complete your order here 
-
-Re Refi for Hi Did you recieve my email from last week I happy to tell you 
-that you can get a home loan at a rate Your tracking number is NG5132 You need 
-to confirm your details within the next hours Please respond to this email 
-address ecoquote03 yahoo.com Be sure to include the following Full name 
-Phone Best time to reach you We will get back with you right away to discuss 
-the details Best Regards Gladys Coley Ecoquote To never hear from us again 
-powermarketing.capturehost.com/pak/powermarketing/gone.php 
-
-New Page Dear Barclays member This email was sent by the Barclays server to 
-verify your e-mail address.You must complete this process by clicking on the 
-link below and entering your account information.This is done for your protection 
-because some of our members are no longer have access to their onlyne access 
-and we must verify it.To verify your e-mail address and access your bank account 
-click on the lick below https Please fill in the required information 
-This is required for us to continue to offer you a safe and risk free environment 
-Thanks you Accounts Management 
-
-ATTENTION Latest updates Download any latest software now http Marian with regards 
-
-This is b3tt3r th3n Viagr4 Dear Valued Customer Today you are about to learn 
-about the future The future in Prescript1on buying Right now in Canada they use 
-almost ALL Geneeric drugs to cut back on spending and they probably spend 
-about a of what the USA spends on Prescript1on medications Today is your chance 
-to get in on these S4vings 
-
-'''
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-# |   INITIAL TAKEAWAYS   |
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# The spam filter performs well (98%+ accuracy) but has too many false positives
-# coworkers spam each other -- if I kept "replies" and "forwarded by" I could improve this ... maybe?
+print_false_negatives(X_test, y_test, y_pred)
+print_false_positives(X_test, y_test, y_pred)
 
 
 
 
-#########################################
-#########################################
-# |                                   | #
-# |   MODELS WITHOUT STOP WORDS       | #
-# |                                   | #
-#########################################
-#########################################
+####################################################
+####################################################
+# |                                              | #
+# |         MODELS (STOP WORDS REMOVED )         | #
+# |                                              | #
+####################################################
+####################################################
 
 
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~
 #  |      NAIVE BAYES      |
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.cross_validation import train_test_split, cross_val_score
-from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
+# using only the text of the email
+X_train, X_test, y_train, y_test = get_model_data(df, 'text', 123)
+train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=True)
+acc, y_pred = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test)
+roc, y_prob = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
+print 'MODEL: Naive Bayes on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
+#MODEL: Naive Bayes on email text: 
+#	 accuracy score: 	 0.984836 
+#	 roc_auc_score: 	      0.997420
 
-# create features and columns
-X = df.text
-y = df.spam
+# print confusion matrix
+print confusion_matrix(y_test, y_pred)
+#[[4343   79]
+# [  70 5334]]
+print_false_negatives(X_test, y_test, y_pred)
+print_false_positives(X_test, y_test, y_pred)
 
-# create train_test_split datasets
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=9)
+'''False posivites
 
-# fit and transform X_train, and transform X_test
-vect = CountVectorizer(stop_words='english')
-train_dtm = vect.fit_transform(X_train)
-test_dtm = vect.transform(X_test)
+An old scam has surfaced recently with renewed vigor The Nigerian-419 fraud 
+letter so called because it violates section of Nigerian law is sent in many 
+variations by surface and airmail as well as by fax and email Generally the form 
+it takes is to ask the unsuspecting victim to provide their bank account 
+information in return for a promise to deposit a very large sum of money ...
 
-# run Multinomial Naive Bayes
-mn_nb = MultinomialNB()
-mn_nb.fit(train_dtm, y_train)
+URGENT NOTIFICATION SI Servers UNAVAILABLE 
 
-# make predictions
-y_pred = mn_nb.predict(test_dtm)
-accuracy_score(y_test, y_pred)      # 0.98594  # 150515: 0.98782
-confusion_matrix(y_test, y_pred)    # [[4496,  104],    # 150515:   [4498, 92]
-                                    #  [  76, 8133]])               [64, 8158]
+CONGRATULATIONS
 
-# calc predict probability for roc_auc score
-y_prob = mn_nb.predict_proba(test_dtm)[:, 1]
-roc_auc_score(y_test, y_prob) # 0.996839    # 150515: 
+just in Your application has been pre approved on Wednesday December and your 
+mtg process is ready for rates starting at Point Click fill-it out and your 
+done http y Yours truly Gale Beatty http 
 
-# calc using full data set and cross_val_score
-mn_nb = MultinomialNB()
-X_fitted = vect.fit_transform(X)
-scores_nb = cross_val_score(mn_nb, X_fitted, y, cv=10, scoring='roc_auc')
-scores_nb.mean() # 0.98780
-
+'''
 
 
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  |      LOGISTIC REGRESSION      |
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-from sklearn.linear_model import LogisticRegression
+X_train, X_test, y_train, y_test = get_model_data(df, 'text', 1)
+train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=True)
+acc, y_pred = run_log_reg(train_dtm, test_dtm, y_train, y_test)
+roc, y_prob = run_log_reg(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
+print 'MODEL: Logistic Regression on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
+#MODEL: Logistic Regression on email text: 
+#	 accuracy score: 	 0.982699 
+#	 roc_auc_score: 	      0.997602
 
-logreg = LogisticRegression()
-scores_lr = cross_val_score(logreg, X_fitted, y, cv=10, scoring='roc_auc')
-scores_lr.mean() # 0.994938     #150515: 0.99517885
+# print confusion matrix
+print confusion_matrix(y_test, y_pred)
+#[[4397  125]
+# [  45 5259]]
+print_false_negatives(X_test, y_test, y_pred)
+print_false_positives(X_test, y_test, y_pred)
 
-# what kind of emails is it missing
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=9)
+# TAKEAWAYS
+# ~~> Model catches too many ham emails (i.e., producs too many false positives)
+# ~~> 
+# ~~> 
 
-# vectorize text
-X_train_dtm = vect.fit_transform(X_train)
-X_test_dtm = vect.transform(X_test)
-
-# fit model
-logreg = LogisticRegression()
-logreg.fit(X_train_dtm, y_train)
-y_pred = logreg.predict(X_test_dtm)
-
-# where is the model missing?
-confusion_matrix(y_test, y_pred) # [[4460,  140],  # 150515: [4463,  127]
-                                 #  [  60, 8149]]            [  43, 8179]
-# false positives
-for fp in X_test[y_test < y_pred]:
-    print fp, '\n'
-
-# examples of false positives (15/05/15 mail)
+# Examples of false positives
 '''
-Thanks for ordering from Amazon.com Your purchase information appears below 
-To see the latest information about your order or to cancel or modify a pending
- order just click the Your Account link in the top right corner of any page on 
- our Web site or visit http 
+Sally Thought this was good Cindy Hey here is another wonderful group of facts 
+about women I do n't normally like to pass these on but it has too much 
+importance Even if your a skeptic read to the bottom Did you know that it 
+Beautiful Women Month Well it is and that means you ...
 
-Ok 
-
-I understand The money out the door is approximately $ however we have dollars 
-in excess of that amount reserved The $ will be paid out of that reserve and 
-will not be new dollars I will keep you posted Thank you Frank 
-
-Thank you for joining Spinner.com The Web largest source of free streaming 
-music Just wanted to confirm your registration with Spinner you now have 
-complete access to Spinner professionally programmed music channels and the 
-entire Spinner.com Website And just to remind you the player the Website and 
-most importantly the music are all totally FREE Your user name is junglo 
-We have omitted your password ...
-
-Dear Daren Farmer One of the things we like to do here at Expedia is help 
-you maximize your vacation dollar Since accommodations are a big part of every 
-vacation we went to more than quality hotels in more than cities and negotiated 
-hotel rates ...
-
-Here the link to the ERCOT page 
-
+Thought you might enjoy this An old man a boy and a donkey were going to town 
+The boy rode on the donkey and the old man walked As they went along they passed 
+some people who remarked it was a shame the old man was walking and the boy was
+ riding The man and boy thought maybe the critics were right so they changed 
+ positions Later they passed some people that remarked What a shame he makes 
+ that little boy walk They then decided they both would walk Soon they passed 
+ some more people who thought they were stupid to walk when they had a decent 
+ donkey to ride So they both rode the donkey Now they passed some people that 
+ shamed them by saying how awful to put such a load on a poor donkey The boy 
+ and man said they were probably right so they decided to carry the donkey 
+ As they crossed the bridge they lost their grip on the animal and he fell 
+ into the river and drowned The moral of the story If you try to please everyone 
+ you might as well kiss your ass good-bye 
+ 
+ DELTA FAN FARES FOR FEBRUARY FEBRUARY Hello Mr Farmer Welcome to this week 
+ version of Delta Fan Fares For the uninitiated it an incredible e-mail program
+ for Delta customers who want to get away from it all and enjoy events and 
+ activities in cities across the country Before you start packing remember 
+ that you need your SkyMiles number...
 
 '''    
 
-# false negatives
-for fn in X_test[y_test > y_pred]:
-    print fn, '\n'
+# create our own y_pred using y_prob
+prob = 0.50
+while prob < 1:    
+    y_pred = np.where(y_prob > prob, 1, 0)
+    acc = accuracy_score(y_test, y_pred)
+    conmat = confusion_matrix(y_test, y_pred)
+    print 'Prob: %.2f \t Accuracy: %.4f \t FP: %d \t FN: %d \t TotalMiss: %d' % (prob, acc, conmat[0][1], conmat[1][0], conmat[0][1] + conmat[1][0])
+    prob += 0.05
 
-'''
-Latest news and information Leasing Deal of the Year Mercedes-Benz E240 
-Elegance Auto Specification includes Automatic Metallic Paint Alloy Wheels 
-Electric Windows Remote Central Locking Electric Folding Mirrors Trip computer 
-Air Conditioning Headlamp ...
-
-Amnis Systems Inc. OTCBB AMNM CONTRACT ANNOUNCEMENTS AND HUGE NEWSLETTER 
-COVERAGE THIS WEEK FOR AMNM This Thursday AMNM will be profiled by some major 
-newsletters There will be huge volume and a strong increase in price for several days ...
-
-Great Weekend Sorry it took me so long to respond back to you I have been 
-really busy the couple of days just to remind you my name is candy I am years 
-of age I still have your email address from the profile I have seen your online
+# relative performance gain by setting a probability threshold at 0.55 or 0.60
+#Prob: 0.50 	 Accuracy: 0.9827 	 FP: 125 	 FN: 45 	 TotalMiss: 170
+#Prob: 0.55 	 Accuracy: 0.9841 	 FP: 101 	 FN: 55 	 TotalMiss: 156
+#Prob: 0.60 	 Accuracy: 0.9836 	 FP: 86 	 FN: 75 	 TotalMiss: 161
+#Prob: 0.65 	 Accuracy: 0.9694 	 FP: 50 	 FN: 251 	 TotalMiss: 301
+#Prob: 0.70 	 Accuracy: 0.9672 	 FP: 42 	 FN: 280 	 TotalMiss: 322
+#Prob: 0.75 	 Accuracy: 0.9650 	 FP: 32 	 FN: 312 	 TotalMiss: 344
+#Prob: 0.80 	 Accuracy: 0.9612 	 FP: 27 	 FN: 354 	 TotalMiss: 381
+#Prob: 0.85 	 Accuracy: 0.9574 	 FP: 16 	 FN: 403 	 TotalMiss: 419
+#Prob: 0.90 	 Accuracy: 0.9495 	 FP: 13 	 FN: 483 	 TotalMiss: 496
+#Prob: 0.95 	 Accuracy: 0.9344 	 FP: 8 	 FN: 637 	 TotalMiss: 645
 
 
-'''
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-# |       TAKEAWAYS       |
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# |        BAGGING NAIVE BAYES         | 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+np.random.seed(123)
+
+def get_bootstrap_sample(data):
+    samp = np.random.choice(a=data.shape[0], size=data.shape[0]*0.50, replace=False)
+    oob = list(set(range(data.shape[0])) - set(samp))   
+    boot = data.iloc[samp, :]
+    oob  = data.iloc[oob, :]
+    X_boot, y_boot = boot.text, boot.spam
+    X_oob, y_oob = oob.text, oob.spam
+    return X_boot, X_oob, y_boot, y_oob
+
+# bagging
+NUM_BOOT = 2
+predictions = [0]*len(y_test)
+for ii in xrange(NUM_BOOT):
+    X_train, X_test, y_train, y_test = get_bootstrap_sample(df)
+    
+    # fit and transform X_train, and transform X_test
+    vect = CountVectorizer(stop_words='english')
+    train_dtm = vect.fit_transform(X_train)
+    test_dtm = vect.transform(X_test)
+    
+    # run Multinomial Naive Bayes
+    mn_nb = MultinomialNB()
+    mn_nb.fit(train_dtm, y_train)
+    
+    # make predictions
+    y_pred = mn_nb.predict(test_dtm)
+    acc = accuracy_score(y_test, y_pred) 
+    print "print %d: %.5f" % (ii, acc)     
+    #confusion_matrix(y_test, y_pred)
+    predictions = predictions + y_pred
+
+
+
+
+
+
+
+
+
 #  HOW DO I TUNE NB AWAY FROM FALSE POSITIVES?
-
-
-
+# ~~> LogReg: predict proba, change cut off values (first, see if FP and FN are close to 50%?)
+# ~~> NB: ???
