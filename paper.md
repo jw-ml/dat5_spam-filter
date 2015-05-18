@@ -37,16 +37,36 @@ At the end of this cleaning, I construct a dataframe with four columns:
 3. 'subject': the email's subject line
 4. 'text': the body of the email
 
+The above turned out to be surprisingly difficult (for me). The emails came in lots of formats, and several of those formats did not play well with the email or beautifulsoup modules. A major area of improvement for this project is in the data cleaning stage.
+
 Lastly, I use the natural language toolkit (nlkt) and scikit-learn's CountVectorizer to further clean text elements and to create word count vectors (see [preprocess\_and\_model.py](https://github.com/jw-ml/dat5_spam-filter/blob/master/code/preprocess_and_model.py)).
 
 ###Data exploration and visualization
 
+#INSERT WORDCOUNTS
+#INSERT WORD CLOUD
+
 ###Features
 
+
+
+
 ###Model selection and results
+
+
+
 
 ###Main challenges
 
 ###Areas for further work
+
+1. Creation of new features, such as:
+  * count number of links in email
+  * ratio of uppercase to lowercase characters
+  * number of non-alpahnumeric characters
+  * length of email, subject, etc.
+  * timestamp (hour, day of the week, etc.)
+  * including n_grams
+2. Creation of ensemble method to combine of naive bayes on email body and subject, and logistic regression (or others) on derived features listed above.
 
 ###Conclusions
