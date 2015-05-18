@@ -156,10 +156,10 @@ def parse_email(s, ham_spam, remove_replies=True):
     '''
     timestamp, subject, body = separate_header_body(s)
     if ham_spam == 'ham':
-        is_success = parse_ham(timestamp, subject, body, remove_replies=False)
+        is_success = parse_ham(timestamp, subject, body, remove_replies)
         return is_success
     else:
-        is_success = parse_spam(timestamp, subject, body, remove_replies=False)
+        is_success = parse_spam(timestamp, subject, body, remove_replies)
         return is_success
 
         
@@ -180,7 +180,7 @@ for msg in list_of_emails:
             # is email ham or spam?
             ham_or_spam = msg[12:15]
             # call parse_email() to get email header and body
-            success = parse_email(content, ham_or_spam)
+            success = parse_email(content, ham_or_spam, remove_replies=False)
             # store emails that cannot be parsed
             if not success:            
                 problems.append(msg)
