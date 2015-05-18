@@ -37,7 +37,7 @@ At the end of this cleaning, I construct a dataframe with four columns:
 3. 'subject': the email's subject line
 4. 'text': the body of the email
 
-The above turned out to be surprisingly difficult (for me). The emails came in lots of formats, and several of those formats did not play well with the email or beautifulsoup modules. A major area of improvement for this project is in the data cleaning stage.
+The above turned out to be surprisingly difficult (for me). The emails came in lots of formats, and several of those formats did not play well with the email or beautifulsoup modules. A major area of improvement for this project is in the data cleaning stage and better exception/error handling.
 
 Lastly, I use the natural language toolkit (nlkt) and scikit-learn's CountVectorizer to further clean text elements and to create word count vectors (see [preprocess\_and\_model.py](https://github.com/jw-ml/dat5_spam-filter/blob/master/code/preprocess_and_model.py)).
 
