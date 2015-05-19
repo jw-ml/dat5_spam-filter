@@ -179,10 +179,14 @@ train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=F
 acc, y_pred = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test)
 roc, y_prob = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
 print 'MODEL: Naive Bayes on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
-
+#MODEL: Naive Bayes on email text: 
+#	 accuracy score: 	 0.987177 
+#	 roc_auc_score: 	      0.997176
 
 # print confusion matrix
 print confusion_matrix(y_test, y_pred)
+#[[4509   63]
+# [  65 5345]]
 
 # look at false negatives
 print_false_negatives(X_test, y_test, y_pred)
@@ -206,11 +210,13 @@ acc, y_pred = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test)
 roc, y_prob = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
 print 'MODEL: Naive Bayes on email Subject: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
 #MODEL: Naive Bayes on email Subject: 
-#	 accuracy score: 	 0.937106 
-#	 roc_auc_score: 	      0.982702
+#	 accuracy score: 	 0.932779 
+#	 roc_auc_score: 	      0.980713
 
 # print confusion matrix
 print confusion_matrix(y_test, y_pred)
+#[[4259  313]
+# [ 358 5052]]
 print_false_negatives(X_test, y_test, y_pred)
 print_false_positives(X_test, y_test, y_pred)
 
@@ -232,12 +238,12 @@ acc, y_pred = run_log_reg(train_dtm, test_dtm, y_train, y_test)
 roc, y_prob = run_log_reg(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
 print 'MODEL: Logistic Regression on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
 #MODEL: Logistic Regression on email text: 
-#	 accuracy score: 	 0.982699 
-#	 roc_auc_score: 	      0.997297
+#	 accuracy score: 	 0.985774 
+#	 roc_auc_score: 	      0.997331
 
 print confusion_matrix(y_test, y_pred) 
-#[[4402  120]
-# [  50 5254]]
+#[[4563  110]
+# [  32 5277]]
 print_false_negatives(X_test, y_test, y_pred)
 print_false_positives(X_test, y_test, y_pred)
 
@@ -246,9 +252,9 @@ train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=F
 acc, y_pred = run_log_reg(train_dtm, test_dtm, y_train, y_test)
 roc, y_prob = run_log_reg(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
 print 'MODEL: Logistic Regression on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
-#MODEL: Logistic Regression on email subject: 
-#	 accuracy score: 	0.942296 
-#	 roc_auc_score: 	     0.984512
+#MODEL: Logistic Regression on email text: 
+#	 accuracy score: 	 0.931877 
+#	 roc_auc_score: 	      0.981604
 
 print_false_negatives(X_test, y_test, y_pred)
 print_false_positives(X_test, y_test, y_pred)
@@ -275,14 +281,14 @@ train_dtm, test_dtm = transform_data_to_dtm(X_train, X_test, remove_stop_words=T
 acc, y_pred = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test)
 roc, y_prob = run_multinomial_nb(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
 print 'MODEL: Naive Bayes on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
-#MODEL: Naive Bayes on email text: 
-#	 accuracy score: 	 0.984836 
-#	 roc_auc_score: 	      0.997420
+#MODEL: MODEL: Naive Bayes on email text: 
+#	 accuracy score: 	 0.987177 
+#	 roc_auc_score: 	      0.997020
 
 # print confusion matrix
 print confusion_matrix(y_test, y_pred)
-#[[4343   79]
-# [  70 5334]]
+#[[4505   67]
+# [  61 5349]]
 print_false_negatives(X_test, y_test, y_pred)
 print_false_positives(X_test, y_test, y_pred)
 
@@ -315,13 +321,13 @@ acc, y_pred = run_log_reg(train_dtm, test_dtm, y_train, y_test)
 roc, y_prob = run_log_reg(train_dtm, test_dtm, y_train, y_test, pred_prob=True)
 print 'MODEL: Logistic Regression on email text: \n\t accuracy score: \t %.6f \n\t roc_auc_score: \t %.6f' % (acc, roc)
 #MODEL: Logistic Regression on email text: 
-#	 accuracy score: 	 0.982699 
-#	 roc_auc_score: 	      0.997602
+#	 accuracy score: 	 0.984472 
+#	 roc_auc_score: 	      0.997101
 
 # print confusion matrix
 print confusion_matrix(y_test, y_pred)
-#[[4397  125]
-# [  45 5259]]
+#[[4549  124]
+# [  31 5278]]
 print_false_negatives(X_test, y_test, y_pred) # appear to be very long emails ...
 print_false_positives(X_test, y_test, y_pred) # appear to be very short emails (or spam-like)
 
@@ -360,25 +366,27 @@ some people who remarked it was a shame the old man was walking and the boy was
 '''    
 
 # create our own y_pred using y_prob
+print '|Probability threshold \t| Accuracy score \t| False positives \t| False negatives \t| Total misses \t|'
+print '|----------- |-------------------|----------|---------|-----------------|'
 prob = 0.50
 while prob < 1:    
     y_pred = np.where(y_prob > prob, 1, 0)
     acc = accuracy_score(y_test, y_pred)
     conmat = confusion_matrix(y_test, y_pred)
-    print 'Prob: %.2f \t Accuracy: %.4f \t FP: %d \t FN: %d \t TotalMiss: %d' % (prob, acc, conmat[0][1], conmat[1][0], conmat[0][1] + conmat[1][0])
+    print '|%.2f \t| %.4f \t| %d \t| %d \t|  %d \t|' % (prob, acc, conmat[0][1], conmat[1][0], conmat[0][1] + conmat[1][0])
     prob += 0.05
 
 # relative performance gain by setting a probability threshold at 0.55 or 0.60
-#Prob: 0.50 	 Accuracy: 0.9827 	 FP: 125 	 FN: 45 	 TotalMiss: 170
-#Prob: 0.55 	 Accuracy: 0.9841 	 FP: 101 	 FN: 55 	 TotalMiss: 156
-#Prob: 0.60 	 Accuracy: 0.9836 	 FP: 86 	 FN: 75 	 TotalMiss: 161
-#Prob: 0.65 	 Accuracy: 0.9694 	 FP: 50 	 FN: 251 	 TotalMiss: 301
-#Prob: 0.70 	 Accuracy: 0.9672 	 FP: 42 	 FN: 280 	 TotalMiss: 322
-#Prob: 0.75 	 Accuracy: 0.9650 	 FP: 32 	 FN: 312 	 TotalMiss: 344
-#Prob: 0.80 	 Accuracy: 0.9612 	 FP: 27 	 FN: 354 	 TotalMiss: 381
-#Prob: 0.85 	 Accuracy: 0.9574 	 FP: 16 	 FN: 403 	 TotalMiss: 419
-#Prob: 0.90 	 Accuracy: 0.9495 	 FP: 13 	 FN: 483 	 TotalMiss: 496
-#Prob: 0.95 	 Accuracy: 0.9344 	 FP: 8 	 FN: 637 	 TotalMiss: 645
+#Prob: 0.50 	| Accuracy: 0.9845 	| FP: 124 	| FN: 31 	| TotalMiss: 155 	|
+#Prob: 0.55 	| Accuracy: 0.9853 	| FP: 113 	| FN: 34 	| TotalMiss: 147 	|
+#Prob: 0.60 	| Accuracy: 0.9852 	| FP: 106 	| FN: 42 	| TotalMiss: 148 	|
+#Prob: 0.65 	| Accuracy: 0.9861 	| FP: 93 	| FN: 46 	| TotalMiss: 139 	|
+#Prob: 0.70 	| Accuracy: 0.9871 	| FP: 76 	| FN: 53 	| TotalMiss: 129 	|
+#Prob: 0.75 	| Accuracy: 0.9869 	| FP: 69 	| FN: 62 	| TotalMiss: 131 	|
+#Prob: 0.80 	| Accuracy: 0.9865 	| FP: 59 	| FN: 76 	| TotalMiss: 135 	|
+#Prob: 0.85 	| Accuracy: 0.9680 	| FP: 39 	| FN: 280 	| TotalMiss: 319 	|
+#Prob: 0.90 	| Accuracy: 0.9626 	| FP: 26 	| FN: 347 	| TotalMiss: 373 	|
+#Prob: 0.95 	| Accuracy: 0.9474 	| FP: 19 	| FN: 506 	| TotalMiss: 525 	|
 
 
 
