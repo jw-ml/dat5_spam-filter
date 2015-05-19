@@ -5,7 +5,7 @@
 
 ###Problem and hypothesis
 
-The problem is simple. The world is full of awful spammers who flood people's email boxes with nonsense at best, and with malious, identity stealing malware at worst. The spammers must be stopped. To do this, we need to reduce the number of spam emails that people see, and spam filtering is the way to do that.
+The problem is simple. The world is full of spammers who flood people's email boxes with nonsense at best, and with malious, identity stealing malware at worst. The spammers must be stopped. To do this, we need to reduce the number of spam emails that people see, and spam filtering is the way to do that.
 
 My personal motivation for this project is twofold:
 
@@ -19,9 +19,20 @@ My hypothesis is that spam emails will contain more words and phrases about mone
 
 The data that will be used for this project comes from two main sources. A subset of the [Enron email corpus](https://www.cs.cmu.edu/~./enron/) which entered into the public domain during the Federal Energy Regulatory Commission's investigation of Enron after Enron's [spectacular collapse](http://www.salon.com/2003/10/14/enron_22/). Specifically, the subset used for this project includes the email of six executives. The spam messages come from the SpamAssassin corpus, the Honeypot Project, the personal spam archives of researchers Bruce Guenter and Georgios Paliouras. A copy of the data can be downloaded at http://www.aueb.gr/users/ion/data/enron-spam/.
 
-The raw data contain 52,075 email files.
+The raw data contain 52,075 _raw email_ files containing 19,088 ham emails, and 32,988 spam emails. After cleaning the email and preprocessing the data for analysis, I also drop a number of emails.
 
-###Preprocessing the data
+#####Email sample sizes
+| Data                                              | Ham     | Spam   | Total (N)  | 
+| -------------                                     |:-------:|:------:|:----------:|
+| Raw data                                          | 19,088  | 32,988 | 52,076     |
+| "clean" data                                      | 18,962  | 22,006 | 40,968     |
+| preprocessed data (with null values dropped)      | 18,657  | 21,270 | 39,927     |
+
+For the above numbers and the results included in this paper, I use a sample that includes email replies and forwarded emails. One could rerun the analysis without including replies and forwards, but that would lead to a smaller sample size with slightly less predictive power.
+
+Also, at first I thought my results would be skewed because I was using only email from a small subset of Enron employees. However, spam filters are inherently individualized and I know think my results may be skewed in the other direction. Another potential project may be to only run these models on emails sent from one individual.
+
+###Cleaning and preprocessing the data
 
 Taking the data from raw form to a form that could be more easily analyzed was the most difficult part of this project. In order to learn more about Natural Language Processing, I chose to use the email data in its raw form instead of the preprocessed form which is also available online. The raw data included emails that had different character encodings, emails with and without html elements, and a variety of different underlying structures. Decisions made in the part of the process will inevitably influence the modeling phrase, but, given the size of the sample, the effects may not be terribly large.
 
@@ -43,14 +54,13 @@ Lastly, I use the natural language toolkit (nlkt) and scikit-learn's CountVector
 
 ###Data exploration and visualization
 
-* _need to insert word counts_
-* _try to create a word cloud_
+* _need to insert word counts, etc._
 
 ###Features
 
-Currently, my model is built around only a few features:
-1. the document term matrix associated with the email text
-2. the document term matrix associtaed with the email subject
+Currently, my model is built around only a few features of the possible features that can be extracted from this data:
+1. the document term matrix associated with the email text (p = 181,870)
+2. the document term matrix associtaed with the email subject (p = 19,435)
 
 Over the next week, I intend to create the following features:
 1. the length of text
