@@ -10,9 +10,9 @@ from bs4 import BeautifulSoup
 import email
 
 
-# Set program constants
-DATA_PATH = '../raw_data/raw_data_inventory.csv'
-#DATA_PATH = '../raw_data/raw_data_sample.csv'
+# Set program constants; USE TO PICK SAMPLE OR FULL DATA
+#DATA_PATH = '../raw_data/raw_data_inventory.csv'
+DATA_PATH = '../raw_data/raw_data_sample.csv'  
 
 
 # declare variables
