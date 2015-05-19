@@ -28,6 +28,7 @@ The raw data contain 52,075 _raw email_ files containing 19,088 ham emails, and 
 | "clean" data                                      | 18,962  | 22,006 | 40,968     |
 | preprocessed data (with null values dropped)      | 18,657  | 21,270 | 39,927     |
 
+
 For the above numbers and the results included in this paper, I use a sample that includes email replies and forwarded emails. One could rerun the analysis without including replies and forwards, but that would lead to a smaller sample size with slightly less predictive power.
 
 Also, at first I thought my results would be skewed because I was using only email from a small subset of Enron employees. However, spam filters are inherently individualized and I know think my results may be skewed in the other direction. Another potential project may be to only run these models on emails sent from one individual.
@@ -43,26 +44,26 @@ In order to clean the data, I took an inventory of all the data that I had (see 
 3. Remove any text that is included as part of a "reply" or "forward" (_note: Leaving this data in could have a large impact on the model's predictions. I indent to run the models again with replies and forwards included before the final write-up_)
 
 At the end of this cleaning, I construct a dataframe with four columns:
+
 1. 'spam': whether the email is ham or spam
 2. 'timestamp': the time the email was sent (or received - it is not always clear)
 3. 'subject': the email's subject line
 4. 'text': the body of the email
 
-The above turned out to be surprisingly difficult (for me). The emails came in lots of formats, and several of those formats did not play well with the email or beautifulsoup modules. A major area of improvement for this project is in the data cleaning stage and better exception/error handling.
+The above turned out to be surprisingly difficult (for me). The emails came in lots of formats, and several of those formats did not play well with the email or beautifulsoup modules. A major area of improvement for this project is in the data cleaning stage and better exception/error handling. Currently, I have to drop several emails from the data because I still have not figured out how to deal with those emails (hence, the decrease in N seen above).
 
 Lastly, I use the natural language toolkit (nlkt) and scikit-learn's CountVectorizer to further clean text elements and to create word count vectors (see [preprocess\_and\_model.py](https://github.com/jw-ml/dat5_spam-filter/blob/master/code/preprocess_and_model.py)).
 
-###Data exploration and visualization
-
-* _need to insert word counts, etc._
 
 ###Features
 
 Currently, my model is built around only a few features of the possible features that can be extracted from this data:
+
 1. the document term matrix associated with the email text (p = 181,870)
 2. the document term matrix associtaed with the email subject (p = 19,435)
 
 Over the next week, I intend to create the following features:
+
 1. the length of text
 2. the length of subject
 3. ratio of upper to lower case letters
@@ -101,14 +102,14 @@ Next, I investigated out the models were missing their predictions. In general, 
 #####Confusion matrix (_features = email text with replies/forwards included_)
 | Model                                             | True negatives | False positives | False negatives | True positives |
 | -------------                                     |:---: |:--: |:--: |:--: |
-| Naive Bayes (without removing stop words)         | 4509 | 63  |65   |5345 |
-| Naive Bayes (with stop words removed)             | 4505 | 67  |61   |5349 |
-| Logistic Regression (without removing stop words) | 4563 | 110 |32   |5277 |
-| Logistic Regression (with stop words removed)     | 4549 | 124 |31   |5278 |
+| Naive Bayes (without removing stop words)         | 4,509 | 63  |65   |5,345 |
+| Naive Bayes (with stop words removed)             | 4,505 | 67  |61   |5,349 |
+| Logistic Regression (without removing stop words) | 4,563 | 110 |32   |5,277 |
+| Logistic Regression (with stop words removed)     | 4,549 | 124 |31   |5,278 |
 
 From the confusion matrix, it is easy to see that Naive Bayes is outperforming Logistic Regression. Even when we tune the logistic regression to have a larger classification threshold, we cannot beat Naive Bayes.
 
-So, what types of emails is Naive Bayes (without removing stop words) missing? Here are few examples
+So, what types of emails is Naive Bayes (without removing stop words) missing? Here are some examples.
 
 #####False positives
 > Dear Ms Kitchen You are a strong contender to be on Fortune s list of the Most Powerful Women in Business this year Please take a moment to make our Powerful Women issue as engaging and fun for our magazine readers and website users as it has been for us By answering the following questions you can help us to get a better sense of you and your busy life...
@@ -143,3 +144,5 @@ The main challenge with this project was processing the email data. In fact, tha
 2. Creation of ensemble method to combine of naive bayes on email body and subject, and logistic regression (or others) on derived features listed above.
 
 ###Conclusions
+
+Naive Bayes is a very powerful tool. Even initial runs of the models were returning accuracy rates greater than 98%. Further, there also a large number of potential features that can be created from text documents. I was only limited by my ability with work with text, rather than by the amount of information contained in the emails.
