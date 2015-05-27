@@ -188,11 +188,15 @@ print confusion_matrix(y_test, y_pred)
 #[[4509   63]
 # [  65 5345]]
 
+# change threshold
+y_pred2 = np.where(y_prob > 0.75, 1, 0)
+print confusion_matrix(y_test, y_pred2)
+
 # look at false negatives
-print_false_negatives(X_test, y_test, y_pred)
+print_false_negatives(X_test, y_test, y_pred2)
     
 # look at false positives:
-print_false_positives(X_test, y_test, y_pred)
+print_false_positives(X_test, y_test, y_pred2)
 
 
 ### with 150512 data without removing stopwords
