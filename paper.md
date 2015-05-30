@@ -5,12 +5,12 @@
 
 ###Problem and hypothesis
 
-The problem is simple. The world is full of spammers who flood people's email boxes with nonsense at best, and with malious, identity stealing malware at worst. The spammers must be stopped. To do this, we need to reduce the number of spam emails that people see, and spam filtering is the way to do that.
+The problem is simple. The world is full of spammers who flood people's email boxes with nonsense at best, and with identity stealing malware at worst. The spammers must be stopped. To do this, we need to reduce the number of spam emails that people see, and spam filtering is the way to do that.
 
 My personal motivation for this project is twofold:
 
 1. To understand better how SPAM filters work in the real world
-2. To extract information from unstructured text and use that information to make predictions - specifically, to use email text and other features to prediction whether an email is ham or spam.
+2. To extract information from unstructured text and use that information to make predictions - specifically, to use email text and other features to predict whether an email is ham or spam.
 
 
 My hypothesis is that spam emails will contain more words and phrases about money, "great deals", sex, and sender appeals for help.
@@ -31,7 +31,7 @@ The raw data contain 52,075 _raw email_ files containing 19,088 ham emails, and 
 
 For the above numbers and the results included in this paper, I use a sample that includes email replies and forwarded emails. One could rerun the analysis without including replies and forwards, but that would lead to a smaller sample size with slightly less predictive power.
 
-Also, at first I thought my results would be skewed because I was using only email from a small subset of Enron employees. However, spam filters are inherently individualized and I know think my results may be skewed in the other direction. Another potential project may be to only run these models on emails sent from one individual.
+Also, at first I thought my results would be skewed because I was using only email from a small subset of Enron employees. However, spam filters are inherently individualized and I now think my results may be skewed in the other direction because I am comingling emails from several people. Another potential project may be to only run these models on emails sent from one individual.
 
 ###Cleaning and preprocessing the data
 
@@ -62,7 +62,7 @@ Currently, my model is built around only a few features of the possible features
 1. the document term matrix associated with the email text (p = 181,870)
 2. the document term matrix associtaed with the email subject (p = 19,435)
 
-Over the next week, I intend to create the following features:
+Other features to investigate could include:
 
 1. the length of text
 2. the length of subject
@@ -75,9 +75,15 @@ Over the next week, I intend to create the following features:
 
 ###Model selection and results
 
-The models I have selected to apply to the document term matrices above are Multinomial Naive Bayes and Logistic Regression. To fit these models, I use train-test-split on the data, fit the model, make predictions, and then calculate the accuracy score and roc_auc_score for each model. Here is a summary the results of four models:
+The models I have selected to apply to the document term matrices above are Multinomial Naive Bayes and Logistic Regression. To fit these models, I use train-test-split on the data, fit the model, make predictions, and then calculate the accuracy score and roc_auc_score for each model. To create a baseline estimate, I ran naive bayes on the emails in a completely unprocessed form. I simply decoded them into unicode, and loaded them into a dataframe. For the other models, I tried different approaches to preprocessing the data. Here is a summary the results.
 
-#####Summary of initial models and results (_features = email text with replies/forwards included_)
+#####Summary of baseline model and results(_features = all information contained in raw data emails_)
+| Model                                             | Accuracy Score | ROC-AUC-Score  |
+| -------------                                     |:-------------: |:-------: |
+| Naive Bayes (without removing stop words)         | 0.998464       | 0.998671 |
+
+
+#####Summary of initial models and results with preprocessing (_features = email text with replies/forwards included_)
 | Model                                             | Accuracy Score | ROC-AUC-Score  |
 | -------------                                     |:-------------: |:-------: |
 | Naive Bayes (without removing stop words)         | 0.987177       | 0.997176 |
@@ -85,9 +91,9 @@ The models I have selected to apply to the document term matrices above are Mult
 | Logistic Regression (without removing stop words) | 0.985774       | 0.997331 |
 | Logistic Regression (with stop words removed)     | 0.984472       | 0.997101 |
 
-Oddly, removing the stop words actually resulted in _slightly_ less accurate precitions and roc-auc-scores for the logistic regressions. 
+Oddly, contrary to my initial beliefs, removing any sort of information from the raw data generally resulted in less accurate precitions and roc-auc-scores. The best performing model on my sample was the baseline case in which I did zero preprocessing of the data.
 
-The other feature I (currently) have is the email Subject line. Running this feature through the same set of models, I generated the following results. Because email Subjects are much shorter on average, I did not bother removing stop words (although, that may be a useful addition).
+The other feature I (currently) have is the email Subject line. Running this feature through the same set of models, I generated the following results. Because email Subjects are much shorter on average, I did not bother removing stop words.
 
 #####Summary of initial models and results (_features = email subject line_)
 | Model                                             | Accuracy Score | ROC-AUC-Score  |
@@ -130,7 +136,7 @@ For next steps on the modeling, I intend to create the features listed above, an
 
 ###Main challenges
 
-The main challenge with this project was processing the email data. In fact, that battle is far from over ...
+The main challenge with this project was processing the email data. However, as the results above indicate, adding more structure to the data did not improve the predictive ability of the models. In fact, the opposite was true. However, this may be due to a large number of spam emails having html tags included, and all of the Enron emails containing at least one of six email addresses (email addresses that were not contained in the spam sample).
 
 ###Areas for further work
 
@@ -145,4 +151,4 @@ The main challenge with this project was processing the email data. In fact, tha
 
 ###Conclusions
 
-Naive Bayes is a very powerful tool. Even initial runs of the models were returning accuracy rates greater than 98%. Further, there also a large number of potential features that can be created from text documents. I was only limited by my ability with work with text, rather than by the amount of information contained in the emails.
+Naive Bayes is a very powerful tool. Even initial runs of the models were returning accuracy rates greater than 98%. Further, there also a large number of potential features that can be created from text documents.
