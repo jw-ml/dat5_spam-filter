@@ -42,7 +42,7 @@ df = pd.DataFrame(zip(email_types, email_text), columns=['spam', 'full_text'])
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.cross_validation import train_test_split
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 
 
 X = df.full_text
@@ -58,6 +58,9 @@ for k in range(1, 11):
     nb.fit(train_dtm, y_train)
     y_pred = nb.predict(test_dtm)
     accuracy_score(y_test, y_pred) # 0.99838
+    
+    y_prob = nb.predict_proba(test_dtm)[:, 1]
+    roc_auc_score(y_test, y_prob)
     
 #results
 #    0.99869421614563325
@@ -82,14 +85,5 @@ for subj in X_test[y_test < y_pred]:
 # false negatives
 for subj in X_test[y_test > y_pred]:
     print subj, '\n'
-
-
-
-
-
-
-
-confusion_matrix(y_test, y_pred)
-
 
 
