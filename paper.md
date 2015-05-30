@@ -108,6 +108,7 @@ Next, I investigated out the models were missing their predictions. In general, 
 #####Confusion matrix (_features = email text with replies/forwards included_)
 | Model                                             | True negatives | False positives | False negatives | True positives |
 | -------------                                     |:---: |:--: |:--: |:--: |
+| Naive Bayes (baseline model)                      | 4,769 | 4  |16   |8,230 |
 | Naive Bayes (without removing stop words)         | 4,509 | 63  |65   |5,345 |
 | Naive Bayes (with stop words removed)             | 4,505 | 67  |61   |5,349 |
 | Logistic Regression (without removing stop words) | 4,563 | 110 |32   |5,277 |
