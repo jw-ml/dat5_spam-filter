@@ -125,7 +125,8 @@ def transform_data_to_dtm(train, test, remove_stop_words=True):
 
 def run_multinomial_nb(X_tr, X_tst, y_tr, y_tst, pred_prob=False):
     '''Returns accuracy_score and predictions'''
-    mn_nb = MultinomialNB()
+    #mn_nb = MultinomialNB(class_prior=[0.75, 0.25])
+    mn_nb = MultinomialNB()    
     mn_nb.fit(X_tr, y_train)
     if not pred_prob:
         # make predictions
@@ -189,7 +190,7 @@ print confusion_matrix(y_test, y_pred)
 # [  65 5345]]
 
 # change threshold
-y_pred2 = np.where(y_prob > 0.75, 1, 0)
+y_pred2 = np.where(y_prob > 0.99, 1, 0)
 print confusion_matrix(y_test, y_pred2)
 
 # look at false negatives
