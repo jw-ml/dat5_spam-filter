@@ -1,5 +1,5 @@
-# Mechanically Separated Ham and Spam (DRAFT)
-###May 18, 2015
+# Mechanically Separated Ham and Spam
+###May 30, 2015
 
 ****
 
